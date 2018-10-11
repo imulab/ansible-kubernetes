@@ -1,2 +1,4 @@
 ---
-# handlers file for k8s-dep
+- name: "refresh_apt_cache"
+  apt:
+    update_cache: yes

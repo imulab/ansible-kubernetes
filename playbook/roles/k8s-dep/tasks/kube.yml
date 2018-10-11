@@ -1,0 +1,35 @@
+---
+- name: "ensure kube dependencies"
+  apt:
+    name:
+      - apt-transport-https
+      - curl
+    state: present
+
+- name: "install k8s apt key"
+  apt_key:
+    url: "{{ kube.apt_key }}"
+    state: present
+
+- name: "add k8s apt repository"
+  apt_repository:
+    repo: "{{ kube.apt_repo }}"
+    filename: /etc/apt/sources.list.d/kubernetes.list
+    state: present
+  notify:
+    - refresh_apt_cache
+
+- name: "ensure kube executables"
+  apt:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+    state: present
+
+- name: "mark kube executables"
+  command: "apt-mark hold {{item}}"
+  with_items:
+    - kubelet
+    - kubeadm
+    - kubectl

@@ -1,0 +1,13 @@
+---
+- name: "add yq repository"
+  apt_repository:
+    repo: "{{ yq.apt_repo }}"
+    state: present
+  notify:
+    - refresh_apt_cache
+
+- name: "ensure yq executables"
+  apt:
+    name:
+      - yq
+    state: present

@@ -6,10 +6,8 @@
       - docker-engine
       - docker.io
     state: absent
-
-- name: "update apt cache"
-  apt:
-    update_cache: yes
+  notify:
+    - refresh_apt_cache
 
 - name: "ensure docker dependencies"
   apt:
@@ -22,21 +20,15 @@
 
 - name: "install docker apt key"
   apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
+    url: "{{ docker.apt_key }}"
     state: present
-
-- name: "get release"
-  command: lsb_release -cs
-  register: os_release
 
 - name: "add docker apt repository"
   apt_repository:
-    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{os_release.stdout}} stable"
+    repo: "{{ docker.apt_repo }}"
     state: present
-
-- name: "update apt cache"
-  apt:
-    update_cache: yes
+  notify:
+    - refresh_apt_cache
 
 - name: "ensure docker"
   apt:

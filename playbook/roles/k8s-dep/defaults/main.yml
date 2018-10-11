@@ -1,1 +1,11 @@
 ---
+docker:
+  apt_key: "https://download.docker.com/linux/ubuntu/gpg"
+  apt_repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
+
+kube:
+  apt_key: "https://packages.cloud.google.com/apt/doc/apt-key.gpg"
+  apt_repo: "deb http://apt.kubernetes.io/ kubernetes-xenial main"
+
+yq:
+  apt_repo: "ppa:rmescandon/yq"

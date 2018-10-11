@@ -19,6 +19,7 @@
       register: swap_cmd
     - name: "reboot"
       reboot:
+        post_reboot_delay: 60
       when: swap_cmd.changed == true
 
 - hosts: all
