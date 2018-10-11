@@ -27,8 +27,10 @@
   apt_repository:
     repo: "{{ docker.apt_repo }}"
     state: present
-  notify:
-    - refresh_apt_cache
+
+- name: "refresh_apt_cache"
+  apt:
+    update_cache: yes
 
 - name: "ensure docker"
   apt:

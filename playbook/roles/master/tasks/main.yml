@@ -1,0 +1,36 @@
+---
+- name: "init kubernetes"
+  command: "kubeadm init {{ master.kubeadm_extra_args }}"
+
+- name: "download network configuration"
+  get_url: 
+    url: "{{ item.url }}"
+    dest: "{{ item.dest }}"
+    force: yes
+  loop: "{{ master.network_plugin_configs.sources }}"
+
+- name: "modify network configuration"
+  command: "yq w -i {{ item.file }} {{ item.args }}"
+  loop: "{{ master.network_plugin_configs.modifications }}"
+
+- name: "apply network configuration"
+  command: "kubectl apply -f {{ item.dest }}"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf 
+  loop: "{{ master.network_plugin_configs.sources }}"
+  
+- name: "register kubeadm token"
+  shell: "kubeadm token list | cut -d ' ' -f1 | sed -n '2p' | tee /tmp/k8s_token"
+
+- name: "register ca cert hash"
+  shell: "openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //' | tee /tmp/k8s_master_ca_hash"
+
+- name: "fetch tokens and config to controller"
+  fetch:
+    src: "{{ item }}"
+    dest: /tmp/
+    flat: yes
+  with_items:
+    - /tmp/k8s_token
+    - /tmp/k8s_master_ca_hash
+    - /etc/kubernetes/admin.conf

@@ -1,0 +1,12 @@
+---
+master:
+  kubeadm_extra_args: "--pod-network-cidr=17.16.0.0/16"
+  network_plugin_configs:
+    sources:
+      - url: https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
+        dest: /tmp/rbac.yaml
+      - url: https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
+        dest: /tmp/calico.yaml
+    modifications:
+      - file: /tmp/calico.yaml
+        args: "-d3 'spec.template.spec.containers[0].env[8].value' '17.16.0.0/16'"

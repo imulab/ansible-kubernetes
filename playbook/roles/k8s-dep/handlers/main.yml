@@ -1,4 +1,1 @@
 ---
-- name: "refresh_apt_cache"
-  apt:
-    update_cache: yes

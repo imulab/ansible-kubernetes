@@ -16,8 +16,10 @@
     repo: "{{ kube.apt_repo }}"
     filename: /etc/apt/sources.list.d/kubernetes.list
     state: present
-  notify:
-    - refresh_apt_cache
+
+- name: "refresh_apt_cache"
+  apt:
+    update_cache: yes
 
 - name: "ensure kube executables"
   apt:

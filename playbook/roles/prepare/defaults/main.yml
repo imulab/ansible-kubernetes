@@ -1,0 +1,5 @@
+---
+prepare:
+  swap_definition: /etc/fstab
+  swap_query: ^\/swap.img\s+none\s+swap
+  swap_reboot_wait: 60

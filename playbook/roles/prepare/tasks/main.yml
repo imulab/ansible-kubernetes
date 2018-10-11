@@ -1,0 +1,15 @@
+---
+- name: "disable swap"
+  command: swapoff -a
+- name: "remove swap file"
+  # ansible mount module does not work
+  # resort to remove lines directly
+  lineinfile:
+    dest: "{{ prepare.swap_definition }}"
+    regexp: "{{ prepare.swap_query }}"
+    state: absent
+  register: swap_cmd
+- name: "reboot"
+  reboot:
+    post_reboot_delay: "{{ prepare.swap_reboot_wait }}"
+  when: swap_cmd.changed == true

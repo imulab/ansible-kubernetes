@@ -1,0 +1,12 @@
+---
+- name: "copy tokens to workers"
+  copy:
+    src: "{{ item }}"
+    dest: /tmp
+    mode: u=rw,g=r,o=r
+  with_items:
+    - /tmp/k8s_token
+    - /tmp/k8s_master_ca_hash
+
+- name: "join cluster"
+  shell: "kubeadm join --token $(cat /tmp/k8s_token) {{groups['kubernetes_master'][0]}}:6443 --discovery-token-ca-cert-hash sha256:$(cat /tmp/k8s_master_ca_hash)"
