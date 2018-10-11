@@ -1,0 +1,94 @@
+---
+- hosts: all
+  become: true
+  remote_user: root
+  gather_facts: no
+  pre_tasks:
+    - name: "install python"
+      raw: "sudo apt-get -y install python"
+  tasks:
+    - name: "disable swap"
+      command: swapoff -a
+    - name: "remove swap file"
+      # ansible mount module does not work
+      # resort to remove lines directly
+      lineinfile:
+        dest: /etc/fstab
+        regexp: '^\/swap.img\s+none\s+swap'
+        state: absent
+      register: swap_cmd
+    - name: "reboot"
+      reboot:
+      when: swap_cmd.changed == true
+
+- hosts: all
+  become: true
+  remote_user: root
+  gather_facts: no
+  roles:
+    - k8s-dep
+
+- hosts: kubernetes_master
+  become: true
+  remote_user: root
+  gather_facts: yes
+  tasks:
+    - name: "init kubernetes"
+      command: kubeadm init --pod-network-cidr=17.16.0.0/16
+
+    # - name: "make kubeconfig home directory"
+    #   file:
+    #     path: "{{ ansible_env.HOME }}/.kube"
+    #     state: directory
+    #     mode: u=rw,g=r,o=r
+    # - name: "copy kubeconfig file"
+    #   command: "cp -i /etc/kubernetes/admin.conf {{ ansible_env.HOME }}/.kube/config"
+
+    - name: "download calico configuration"
+      get_url: 
+        url: "{{ item.url }}"
+        dest: "{{ item.dest }}"
+        force: yes
+      with_items:
+        - {url: "https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml", dest: "/tmp/rbac.yaml"}
+        - {url: "https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml", dest: "/tmp/calico.yaml"}
+    - name: "modify calico pod network configuration"
+      replace:
+        path: /tmp/calico.yaml
+        regexp: '192.168.0.0\/16'
+        replace: '17.16.0.0/16'
+    - name: "apply calico configuration"
+      command: "kubectl apply -f {{item}}"
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf 
+      with_items:
+        - /tmp/rbac.yaml
+        - /tmp/calico.yaml
+    - name: "register kubeadm token"
+      shell: "kubeadm token list | cut -d ' ' -f1 | sed -n '2p' | tee /tmp/k8s_token"
+    - name: "register ca cert hash"
+      shell: "openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //' | tee /tmp/k8s_master_ca_hash"
+    - name: "download tokens to local"
+      fetch:
+        src: "{{item}}"
+        dest: /tmp/
+        flat: yes
+      with_items:
+        - /tmp/k8s_token
+        - /tmp/k8s_master_ca_hash
+
+- hosts: kubernetes_workers
+  become: true
+  remote_user: root
+  gather_facts: yes
+  tasks:
+    - name: "copy tokens to workers"
+      copy:
+        src: "{{item}}"
+        dest: /tmp
+        mode: u=rw,g=r,o=r
+      with_items:
+        - /tmp/k8s_token
+        - /tmp/k8s_master_ca_hash
+    - name: "join cluster"
+      shell: "kubeadm join --token $(cat /tmp/k8s_token) {{groups['kubernetes_master'][0]}}:6443 --discovery-token-ca-cert-hash sha256:$(cat /tmp/k8s_master_ca_hash)"

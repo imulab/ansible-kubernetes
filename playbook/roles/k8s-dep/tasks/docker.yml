@@ -1,0 +1,45 @@
+---
+- name: "remove old docker"
+  apt:
+    name:
+      - docker
+      - docker-engine
+      - docker.io
+    state: absent
+
+- name: "update apt cache"
+  apt:
+    update_cache: yes
+
+- name: "ensure docker dependencies"
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+    state: present
+
+- name: "install docker apt key"
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: "get release"
+  command: lsb_release -cs
+  register: os_release
+
+- name: "add docker apt repository"
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{os_release.stdout}} stable"
+    state: present
+
+- name: "update apt cache"
+  apt:
+    update_cache: yes
+
+- name: "ensure docker"
+  apt:
+    name:
+      - docker-ce
+    state: present

@@ -1,0 +1,43 @@
+---
+- import_tasks: docker.yml
+
+- name: "update apt cache"
+  apt:
+    update_cache: yes
+
+- name: "ensure kube dependencies"
+  apt:
+    name:
+      - apt-transport-https
+      - curl
+    state: present
+
+- name: "install k8s apt key"
+  apt_key:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    state: present
+
+- name: "add k8s apt repository"
+  apt_repository:
+    repo: "deb http://apt.kubernetes.io/ kubernetes-xenial main"
+    filename: /etc/apt/sources.list.d/kubernetes.list
+    state: present
+
+- name: "update apt cache"
+  apt:
+    update_cache: yes
+
+- name: "ensure kube executables"
+  apt:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+    state: present
+
+- name: "mark kube executables"
+  command: "apt-mark hold {{item}}"
+  with_items:
+    - kubelet
+    - kubeadm
+    - kubectl
