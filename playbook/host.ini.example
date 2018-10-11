@@ -1,0 +1,6 @@
+[kubernetes_master]
+192.168.100.136 ansible_user=<user> ansible_become_pass=<password>
+
+[kubernetes_workers]
+192.168.100.137 ansible_user=<user> ansible_become_pass=<password>
+192.168.100.138 ansible_user=<user> ansible_become_pass=<password>
